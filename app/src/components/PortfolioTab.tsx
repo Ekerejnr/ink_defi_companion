@@ -1,21 +1,63 @@
+import { useState } from "react";
 import { useAccount } from "wagmi";
 import { useInkBalance } from "../hooks/useInkBalance";
 
 export function PortfolioTab() {
   const { address, isConnected } = useAccount();
-  const { balanceLoading, blockNumber, formattedBalance, refetch } =
-    useInkBalance(address);
+  const [manualAddress, setManualAddress] = useState("");
+  const [trackedAddress, setTrackedAddress] = useState<string | undefined>();
+  const [inputError, setInputError] = useState("");
 
-  if (!isConnected) {
+  const activeAddress = isConnected ? address : trackedAddress;
+
+  const { balanceLoading, blockNumber, formattedBalance, refetch } =
+    useInkBalance(activeAddress);
+
+  const handleTrackAddress = () => {
+    if (!manualAddress.startsWith("0x") || manualAddress.length !== 42) {
+      setInputError("Please enter a valid Ethereum address (0x...)");
+      return;
+    }
+    setInputError("");
+    setTrackedAddress(manualAddress);
+  };
+
+  if (!isConnected && !trackedAddress) {
     return (
       <div className="p-4">
         <h2 className="text-xl font-bold mb-4">Portfolio</h2>
-        <div className="bg-[#111111] rounded-2xl p-6 border border-[#222222] text-center">
+
+        {/* No Wallet Connected */}
+        <div className="bg-[#111111] rounded-2xl p-6 border border-[#222222] text-center mb-4">
           <p className="text-4xl mb-3">👛</p>
           <p className="text-gray-400 text-sm mb-1">No wallet connected</p>
           <p className="text-gray-600 text-xs">
-            Tap the button in the top right to connect
+            Connect a wallet or enter your address below
           </p>
+        </div>
+
+        {/* Manual Address Input */}
+        <div className="bg-[#111111] rounded-2xl p-4 border border-[#222222] space-y-3">
+          <p className="text-sm font-medium">📋 Track any wallet</p>
+          <p className="text-xs text-gray-400">
+            Enter your Ink wallet address to view your portfolio
+          </p>
+          <input
+            type="text"
+            value={manualAddress}
+            onChange={(e) => setManualAddress(e.target.value)}
+            placeholder="0x1234...5678"
+            className="w-full bg-[#222222] text-white text-sm rounded-xl px-3 py-2 border border-[#333333] placeholder-gray-600 font-mono"
+          />
+          {inputError && (
+            <p className="text-xs text-red-400">{inputError}</p>
+          )}
+          <button
+            onClick={handleTrackAddress}
+            className="w-full py-2 bg-[#6C63FF] text-white rounded-xl text-sm font-medium hover:bg-[#5a52d5] transition-all"
+          >
+            Track Wallet →
+          </button>
         </div>
       </div>
     );
@@ -35,12 +77,24 @@ export function PortfolioTab() {
 
       {/* Wallet Address Card */}
       <div className="bg-[#111111] rounded-2xl p-4 border border-[#222222]">
-        <p className="text-gray-400 text-xs mb-1">Connected Wallet</p>
+        <div className="flex items-center justify-between mb-1">
+          <p className="text-gray-400 text-xs">
+            {isConnected ? "Connected Wallet" : "Tracked Wallet"}
+          </p>
+          {!isConnected && (
+            <button
+              onClick={() => setTrackedAddress(undefined)}
+              className="text-xs text-red-400"
+            >
+              Clear
+            </button>
+          )}
+        </div>
         <p className="font-mono text-sm text-white">
-          {address?.slice(0, 8)}...{address?.slice(-6)}
+          {activeAddress?.slice(0, 8)}...{activeAddress?.slice(-6)}
         </p>
         <a
-          href={`https://explorer.inkonchain.com/address/${address}`}
+          href={`https://explorer.inkonchain.com/address/${activeAddress}`}
           target="_blank"
           rel="noopener noreferrer"
           className="text-xs text-[#6C63FF] mt-1 inline-block"
@@ -62,9 +116,7 @@ export function PortfolioTab() {
             <p className="text-3xl font-bold text-white">
               {formattedBalance}
             </p>
-            <p className="text-xs text-gray-400 mt-1">
-              ETH on Ink L2
-            </p>
+            <p className="text-xs text-gray-400 mt-1">ETH on Ink L2</p>
           </>
         )}
       </div>
@@ -92,20 +144,25 @@ export function PortfolioTab() {
         </div>
       </div>
 
-      {/* Coming Soon Cards */}
+      {/* Token Holdings */}
       <div className="bg-[#111111] rounded-2xl p-4 border border-[#222222]">
         <p className="text-gray-400 text-xs mb-3">Token Holdings</p>
         <div className="text-center py-4">
           <p className="text-2xl mb-2">🪙</p>
-          <p className="text-xs text-gray-500">Token balances coming in next update</p>
+          <p className="text-xs text-gray-500">
+            Token balances coming in next update
+          </p>
         </div>
       </div>
 
+      {/* Tydro Positions */}
       <div className="bg-[#111111] rounded-2xl p-4 border border-[#222222]">
         <p className="text-gray-400 text-xs mb-3">Tydro Positions</p>
         <div className="text-center py-4">
           <p className="text-2xl mb-2">📊</p>
-          <p className="text-xs text-gray-500">Lending positions coming in next update</p>
+          <p className="text-xs text-gray-500">
+            Lending positions coming in next update
+          </p>
         </div>
       </div>
     </div>
