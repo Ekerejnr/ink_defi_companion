@@ -4,9 +4,13 @@ import { WagmiProvider } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
 import { config } from "./config/wagmi";
+import { initGA } from "./analytics";
 import "./index.css";
 import "@rainbow-me/rainbowkit/styles.css";
 import App from "./App.tsx";
+
+// Initialize Google Analytics
+initGA();
 
 const queryClient = new QueryClient();
 

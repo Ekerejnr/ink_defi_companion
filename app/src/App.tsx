@@ -1,26 +1,82 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
 import { PortfolioTab } from "./components/PortfolioTab";
 import { PumpTab } from "./components/PumpTab";
 import { TradeTab } from "./components/TradeTab";
 import { BridgeTab } from "./components/BridgeTab";
+import {
+  LayoutDashboard,
+  Rocket,
+  TrendingUp,
+  ArrowLeftRight,
+} from "lucide-react";
+import {
+  trackPageView,
+  trackTabSwitch,
+  trackWalletConnect,
+  trackWalletDisconnect,
+} from "./analytics";
 
-// Tab types
 type Tab = "portfolio" | "pump" | "trade" | "bridge";
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>("portfolio");
   const { address, isConnected } = useAccount();
 
-  return (
-    <div className="flex flex-col min-h-screen bg-[#0a0a0a] text-white">
+  // Track initial page view
+  useEffect(() => {
+    trackPageView("/");
+  }, []);
 
+  // Track wallet connect/disconnect
+  useEffect(() => {
+    if (isConnected && address) {
+      trackWalletConnect(address);
+    } else {
+      trackWalletDisconnect();
+    }
+  }, [isConnected, address]);
+
+  // Handle tab switch with tracking
+  const handleTabSwitch = (tab: Tab) => {
+    setActiveTab(tab);
+    trackTabSwitch(tab);
+    trackPageView(`/${tab}`);
+  };
+
+  return (
+    <div
+      className="flex flex-col min-h-screen"
+      style={{ background: "var(--ink-bg)" }}
+    >
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 bg-[#111111] border-b border-[#222222]">
+      <header
+        style={{
+          background:
+            "linear-gradient(135deg, #0f0a1e 0%, #1a0f3e 50%, #0f0a1e 100%)",
+          borderBottom: "1px solid var(--ink-border)",
+        }}
+        className="flex items-center justify-between px-4 py-3 sticky top-0 z-50"
+      >
         <div className="flex items-center gap-2">
-          <span className="text-2xl">🖊️</span>
-          <span className="font-bold text-lg">Ink DeFi</span>
+          <div
+            className="w-8 h-8 rounded-xl flex items-center justify-center pulse-glow"
+            style={{ background: "linear-gradient(135deg, #7c3aed, #a78bfa)" }}
+          >
+            <span className="text-white font-black text-sm">INK</span>
+          </div>
+          <div>
+            <span className="font-bold text-white text-base leading-none">
+              Ink DeFi
+            </span>
+            <p
+              className="text-xs leading-none mt-0.5"
+              style={{ color: "var(--ink-purple-light)" }}
+            >
+              Companion
+            </p>
+          </div>
         </div>
         <ConnectButton
           showBalance={false}
@@ -31,15 +87,25 @@ function App() {
 
       {/* Wallet Status Bar */}
       {isConnected && address && (
-        <div className="px-4 py-2 bg-[#6C63FF20] border-b border-[#6C63FF30]">
-          <p className="text-xs text-[#6C63FF]">
-            ✅ Connected: {address.slice(0, 6)}...{address.slice(-4)}
+        <div
+          className="px-4 py-2 flex items-center gap-2"
+          style={{
+            background: "var(--ink-purple-glow)",
+            borderBottom: "1px solid var(--ink-border)",
+          }}
+        >
+          <div
+            className="w-2 h-2 rounded-full"
+            style={{ background: "var(--ink-green)" }}
+          ></div>
+          <p className="text-xs" style={{ color: "var(--ink-purple-light)" }}>
+            {address.slice(0, 6)}...{address.slice(-4)} connected on Ink L2
           </p>
         </div>
       )}
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto pb-20">
+      <main className="flex-1 overflow-y-auto pb-24">
         {activeTab === "portfolio" && <PortfolioTab />}
         {activeTab === "pump" && <PumpTab />}
         {activeTab === "trade" && <TradeTab />}
@@ -47,30 +113,37 @@ function App() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-[#111111] border-t border-[#222222] flex items-center justify-around px-2 py-2">
+      <nav
+        className="fixed bottom-0 left-0 right-0 flex items-center justify-around px-2 py-2"
+        style={{
+          background: "#0f0a1e",
+          borderTop: "1px solid var(--ink-border)",
+          backdropFilter: "blur(20px)",
+        }}
+      >
         <TabButton
-          icon="📊"
+          icon={<LayoutDashboard size={20} />}
           label="Portfolio"
           active={activeTab === "portfolio"}
-          onClick={() => setActiveTab("portfolio")}
+          onClick={() => handleTabSwitch("portfolio")}
         />
         <TabButton
-          icon="🚀"
+          icon={<Rocket size={20} />}
           label="InkyPump"
           active={activeTab === "pump"}
-          onClick={() => setActiveTab("pump")}
+          onClick={() => handleTabSwitch("pump")}
         />
         <TabButton
-          icon="📈"
+          icon={<TrendingUp size={20} />}
           label="Trade"
           active={activeTab === "trade"}
-          onClick={() => setActiveTab("trade")}
+          onClick={() => handleTabSwitch("trade")}
         />
         <TabButton
-          icon="🌉"
+          icon={<ArrowLeftRight size={20} />}
           label="Bridge"
           active={activeTab === "bridge"}
-          onClick={() => setActiveTab("bridge")}
+          onClick={() => handleTabSwitch("bridge")}
         />
       </nav>
     </div>
@@ -84,7 +157,7 @@ function TabButton({
   active,
   onClick,
 }: {
-  icon: string;
+  icon: React.ReactNode;
   label: string;
   active: boolean;
   onClick: () => void;
@@ -92,13 +165,19 @@ function TabButton({
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center gap-1 px-4 py-1 rounded-xl transition-all ${
-        active
-          ? "text-[#6C63FF] bg-[#6C63FF15]"
-          : "text-gray-500 hover:text-gray-300"
-      }`}
+      className="flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all relative"
+      style={{
+        color: active ? "var(--ink-purple-light)" : "var(--ink-text-faint)",
+        background: active ? "var(--ink-purple-glow)" : "transparent",
+      }}
     >
-      <span className="text-xl">{icon}</span>
+      {active && (
+        <div
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full"
+          style={{ background: "var(--ink-purple-light)" }}
+        ></div>
+      )}
+      {icon}
       <span className="text-xs font-medium">{label}</span>
     </button>
   );
